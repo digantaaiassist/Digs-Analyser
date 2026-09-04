@@ -3,68 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Options Chain & Market Analyzer</title>
+  <title>Options Chain & Institutional Flow Analyzer</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f172a">
   <style>
-    :root { --bg: #0b0f19; --panel: #131b2e; --border: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #38bdf8; --red: #ef4444; --green: #22c55e; --amber: #f59e0b; }
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 0; }
+    :root {
+      --bg: #0b0f19;
+      --panel: #131b2e;
+      --border: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --red: #ef4444;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --purple: #c084fc;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--text); padding: 16px; line-height: 1.6; }
     .container { max-width: 1200px; margin: 0 auto; }
     header { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; }
-    h1 { font-size: 1.5rem; color: #fff; }
+    h1 { font-size: 1.45rem; color: #fff; }
     p.subtitle { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
     
-    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+    
     .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px; }
-    .card h2 { font-size: 1.1rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; }
+    .card h2 { font-size: 1.05rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 14px; }
     
     .field-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-    label { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-    select, input { width: 100%; padding: 8px; background: #000; color: #fff; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem; }
+    label { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between; }
+    select, input[type="number"] { width: 100%; padding: 8px; background: #000; color: #fff; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem; }
+    input[type="range"] { width: 100%; height: 6px; background: #1e293b; border-radius: 3px; outline: none; margin: 8px 0; accent-color: var(--accent); }
     
+    .slider-val { font-size: 0.85rem; font-weight: 700; color: var(--accent); }
+
     /* Option Chain Table */
-    .chain-controls { display: flex; gap: 10px; margin-bottom: 16px; align-items: flex-end; }
-    .table-container { overflow-x: auto; margin-bottom: 20px; }
+    .chain-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; align-items: center; }
+    .table-container { overflow-x: auto; margin-bottom: 16px; }
     table { width: 100%; border-collapse: collapse; min-width: 700px; }
-    th { background: #000; padding: 12px; font-size: 0.8rem; text-transform: uppercase; border: 1px solid var(--border); color: var(--muted); }
-    td { padding: 8px; border: 1px solid var(--border); text-align: center; background: var(--panel); }
-    .atm-row td { background: rgba(56, 189, 248, 0.1); border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent); font-weight: bold; }
-    .strike-cell { background: #000 !important; font-weight: 800; color: #fff; font-size: 1.1rem; }
-    .itm-tag { font-size: 0.65rem; padding: 2px 4px; border-radius: 3px; background: rgba(34, 197, 94, 0.2); color: var(--green); margin-left: 6px; }
-    .otm-tag { font-size: 0.65rem; padding: 2px 4px; border-radius: 3px; background: rgba(239, 68, 68, 0.2); color: var(--red); margin-left: 6px; }
-    
-    button { width: 100%; padding: 14px; background: var(--accent); color: #000; border: none; border-radius: 6px; font-weight: 800; font-size: 1.1rem; cursor: pointer; text-transform: uppercase; margin-bottom: 24px; transition: 0.2s; }
+    th { background: #000; padding: 10px; font-size: 0.78rem; text-transform: uppercase; border: 1px solid var(--border); color: var(--muted); }
+    td { padding: 6px 8px; border: 1px solid var(--border); text-align: center; background: var(--panel); }
+    .atm-row td { background: rgba(56, 189, 248, 0.12); border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent); }
+    .strike-cell { background: #000 !important; font-weight: 800; color: #fff; font-size: 1.05rem; }
+    .itm-tag { font-size: 0.65rem; padding: 2px 5px; border-radius: 3px; background: rgba(34, 197, 94, 0.25); color: var(--green); margin-left: 6px; font-weight: 700; }
+    .otm-tag { font-size: 0.65rem; padding: 2px 5px; border-radius: 3px; background: rgba(239, 68, 68, 0.25); color: var(--red); margin-left: 6px; font-weight: 700; }
+
+    /* 30m Flow Styling */
+    .flow-panel { background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
+    .flow-panel h3 { font-size: 0.85rem; text-transform: uppercase; margin-bottom: 10px; }
+    .ce-flow-hdr { color: var(--red); }
+    .pe-flow-hdr { color: var(--green); }
+
+    button { width: 100%; padding: 14px; background: var(--accent); color: #000; border: none; border-radius: 6px; font-weight: 800; font-size: 1.05rem; cursor: pointer; text-transform: uppercase; margin-bottom: 24px; transition: opacity 0.2s; }
     button:hover { opacity: 0.9; }
-    .btn-secondary { background: #1e293b; color: #fff; width: auto; padding: 10px 16px; font-size: 0.9rem; margin: 0; }
-    
+
     .report { display: none; }
     .alert { padding: 12px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 12px; border-left: 4px solid; }
-    .alert-bear { background: rgba(239, 68, 68, 0.1); border-color: var(--red); }
-    .alert-bull { background: rgba(34, 197, 94, 0.1); border-color: var(--green); }
-    .alert-neutral { background: rgba(245, 158, 11, 0.1); border-color: var(--amber); }
-    
-    /* Visuals */
-    .visual-container { background: #000; padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; }
+    .alert-bear { background: rgba(239, 68, 68, 0.12); border-color: var(--red); }
+    .alert-bull { background: rgba(34, 197, 94, 0.12); border-color: var(--green); }
+    .alert-neutral { background: rgba(245, 158, 11, 0.12); border-color: var(--amber); }
+
+    /* Visual Elements */
+    .visual-container { background: #000; padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 16px; }
     .bar-chart-row { display: flex; align-items: center; margin-bottom: 8px; }
-    .bar-label { width: 140px; font-size: 0.8rem; font-weight: bold; color: var(--muted); }
-    .bar-wrapper { flex-grow: 1; background: #1e293b; height: 24px; border-radius: 12px; overflow: hidden; position: relative; }
-    .bar-fill { height: 100%; transition: width 0.5s ease; display: flex; align-items: center; padding-left: 8px; font-size: 0.75rem; font-weight: bold; color: #fff; }
+    .bar-label { width: 150px; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+    .bar-wrapper { flex-grow: 1; background: #1e293b; height: 22px; border-radius: 11px; overflow: hidden; }
+    .bar-fill { height: 100%; transition: width 0.4s ease; display: flex; align-items: center; padding-left: 10px; font-size: 0.75rem; font-weight: 700; color: #fff; }
     .bar-red { background: var(--red); }
     .bar-green { background: var(--green); }
     .gauge-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
     .gauge-track { flex-grow: 1; height: 12px; background: linear-gradient(90deg, var(--red) 0%, var(--amber) 50%, var(--green) 100%); border-radius: 6px; position: relative; }
-    .gauge-marker { width: 4px; height: 24px; background: #fff; position: absolute; top: -6px; transition: left 0.5s; box-shadow: 0 0 4px #000; left: 50%; }
-    
+    .gauge-marker { width: 4px; height: 24px; background: #fff; position: absolute; top: -6px; transition: left 0.4s; box-shadow: 0 0 5px #000; left: 50%; }
+
     ul { margin-left: 20px; margin-top: 8px; font-size: 0.9rem; color: #cbd5e1; }
-    li { margin-bottom: 8px; }
+    li { margin-bottom: 6px; }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Institutional Options Chain Analyzer</h1>
-      <p class="subtitle">7-Strike Array (3 ITM, 1 ATM, 3 OTM) + Micro Parameter Confluence Engine</p>
+      <h1>Institutional Options & Market Matrix</h1>
+      <p class="subtitle">Complete Diagnostic Framework: Micro-Parameters, 7-Strike Array & 30-Min Flow Shift[cite: 1]</p>
     </header>
 
     <!-- SECTION 1: MICRO PARAMETERS -->
@@ -74,20 +96,23 @@
         <div class="field-row">
           <label>Index Futures vs Spot</label>
           <select id="fut_spot">
-            <option value="premium">Futures at Premium (Expect Upward Move)</option>
-            <option value="discount">Futures at Discount (Expect Downward Move)</option>
+            <option value="premium">Futures at Premium (Traders Expect Rise)[cite: 1]</option>
+            <option value="discount">Futures at Discount (Traders Expect Fall)[cite: 1]</option>
           </select>
         </div>
         <div class="field-row">
-          <label>Index Price vs VWAP</label>
+          <label>Price vs VWAP</label>
           <select id="vwap_status">
-            <option value="above">Trading ABOVE VWAP (Buyers winning)</option>
-            <option value="below">Trading BELOW VWAP (Sellers winning)</option>
+            <option value="above">Price ABOVE VWAP (Buyers Winning)[cite: 1]</option>
+            <option value="below">Price BELOW VWAP (Sellers Winning)[cite: 1]</option>
           </select>
         </div>
         <div class="field-row">
-          <label>RSI (3-min / 5-min TF)</label>
-          <input type="number" id="rsi_val" value="55" min="0" max="100">
+          <label>
+            <span>RSI (14, 3m/5m TF)</span>
+            <span id="rsi_disp" class="slider-val">55</span>
+          </label>
+          <input type="range" id="rsi_val" min="0" max="100" value="55" oninput="updateSliders()">
         </div>
         <div class="field-row">
           <label>India VIX Level</label>
@@ -96,105 +121,160 @@
         <div class="field-row">
           <label>Market vs VIX Direction</label>
           <select id="vix_dir">
-            <option value="market_up_vix_down">Market Rising + VIX Cooling (Bullish)</option>
-            <option value="market_down_vix_up">Market Falling + VIX Rising (Bearish)</option>
-            <option value="market_up_vix_up">Market Rising + VIX Rising (Bearish Divergence)</option>
-            <option value="market_down_vix_down">Market Falling + VIX Falling (Long Unwinding)</option>
+            <option value="market_up_vix_down">Market Rising + VIX Cooling (Bullish)[cite: 1]</option>
+            <option value="market_down_vix_up">Market Falling + VIX Rising (Bearish)[cite: 1]</option>
+            <option value="market_up_vix_up">Market Rising + VIX Rising (Bearish Trap / Divergence)[cite: 1]</option>
+            <option value="market_down_vix_down">Market Falling + VIX Falling (Long Unwinding)[cite: 1]</option>
           </select>
         </div>
         <div class="field-row">
           <label>2-Candle Volume Confirmation</label>
           <select id="vol_confirm">
-            <option value="yes">Yes: Vol >50k (BN) or >125k (Nifty)</option>
-            <option value="no">No: Low Volume (Fake Breakout Risk)</option>
+            <option value="yes">Confirmed (>50k BN or >125k Nifty)[cite: 1]</option>
+            <option value="no">Unconfirmed / Low Volume (Trap Risk)[cite: 1]</option>
           </select>
         </div>
       </div>
     </div>
 
-    <!-- SECTION 2: OPTIONS CHAIN UI -->
+    <!-- SECTION 2: 7-STRIKE OPTION CHAIN -->
     <div class="card">
-      <h2>2. Institutional Options Chain Footprint</h2>
+      <h2>2. Institutional 7-Strike Footprint (3 ITM + ATM + 3 OTM)</h2>
       
       <div class="chain-controls">
-        <div class="field-row" style="margin: 0; width: 150px;">
-          <label>ATM Strike Center</label>
-          <input type="number" id="atm_input" value="45000">
+        <div class="field-row">
+          <label>Center ATM Strike</label>
+          <input type="number" id="atm_input" value="45000" onchange="generateChain()">
         </div>
-        <div class="field-row" style="margin: 0; width: 120px;">
-          <label>Strike Step</label>
-          <select id="step_input">
-            <option value="100">100 (Bank Nifty)</option>
-            <option value="50">50 (Nifty)</option>
-          </select>
+        <div class="field-row">
+          <label>
+            <span>Strike Step Interval</span>
+            <span id="step_disp" class="slider-val">100 pts</span>
+          </label>
+          <input type="range" id="step_input" min="25" max="500" step="25" value="100" oninput="updateSliders(); generateChain();">
         </div>
-        <button class="btn-secondary" onclick="generateChain()">Build Strike Array</button>
       </div>
 
       <div class="table-container">
         <table>
           <thead>
             <tr>
-              <th colspan="2" style="color: var(--red);">CALL (CE) SIDE - RESISTANCE</th>
-              <th style="width: 150px;">STRIKE</th>
-              <th colspan="2" style="color: var(--green);">PUT (PE) SIDE - SUPPORT</th>
+              <th colspan="2" style="color: var(--red);">CALL (CE) RESISTANCE</th>
+              <th style="width: 140px;">STRIKE</th>
+              <th colspan="2" style="color: var(--green);">PUT (PE) SUPPORT</th>
             </tr>
             <tr>
-              <th>Status / Build-up</th>
-              <th>IV Trend</th>
-              <th>Center</th>
-              <th>Status / Build-up</th>
-              <th>IV Trend</th>
+              <th>Institutional Footprint</th>
+              <th>IV State</th>
+              <th>Round Strike</th>
+              <th>Institutional Footprint</th>
+              <th>IV State</th>
             </tr>
           </thead>
           <tbody id="chain_body">
-            <!-- Dynamically populated via JS -->
+            <!-- Dynamically Rendered -->
           </tbody>
         </table>
       </div>
     </div>
 
-    <button onclick="analyzeMarket()">Execute Holistic Market Diagnosis</button>
+    <!-- SECTION 3: 30-MINUTE ROLLING FLOW & SHIFT -->
+    <div class="card">
+      <h2>3. Last 30-Minute Institutional Flow & Shift (Trending OI)[cite: 1]</h2>
+      <p style="font-size:0.8rem; color:var(--muted); margin-bottom:12px;">
+        Captures dynamic delta migration and structural wall additions/removals over rolling intervals[cite: 1].
+      </p>
+      
+      <div class="grid-2">
+        <!-- Call Flow -->
+        <div class="flow-panel">
+          <h3 class="ce-flow-hdr">Call (CE) 30-Min Shift</h3>
+          <div class="field-row">
+            <label>CE OTM Shift (Resistance Wall)</label>
+            <select id="ce_otm_flow">
+              <option value="none">No Significant Shift</option>
+              <option value="added">Calls ADDED (Sellers building resistance ceiling)[cite: 1]</option>
+              <option value="removed">Calls REMOVED (Call sellers retreating / covering)[cite: 1]</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label>CE ITM Shift (Trapped Sellers)</label>
+            <select id="ce_itm_flow">
+              <option value="none">No Significant Shift</option>
+              <option value="removed">Calls REMOVED (Short covering / Ferocious up-move fuel)[cite: 1]</option>
+              <option value="added">Calls ADDED (High conviction downward writing)[cite: 1]</option>
+            </select>
+          </div>
+        </div>
 
-    <!-- SECTION 3: REPORT & VISUALS -->
+        <!-- Put Flow -->
+        <div class="flow-panel">
+          <h3 class="pe-flow-hdr">Put (PE) 30-Min Shift</h3>
+          <div class="field-row">
+            <label>PE OTM Shift (Support Base)</label>
+            <select id="pe_otm_flow">
+              <option value="none">No Significant Shift</option>
+              <option value="added">Puts ADDED (Sellers laying downside support floor)[cite: 1]</option>
+              <option value="removed">Puts REMOVED (Put writers fleeing / Support cracking)[cite: 1]</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label>PE ITM Shift (Trapped Sellers)</label>
+            <select id="pe_itm_flow">
+              <option value="none">No Significant Shift</option>
+              <option value="removed">Puts REMOVED (ITM Put covering / Downside acceleration)[cite: 1]</option>
+              <option value="added">Puts ADDED (Bulls defending against further drops)[cite: 1]</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button onclick="executeAnalysis()">Run Full Diagnostic Engine</button>
+
+    <!-- SECTION 4: OUTPUT & VISUAL DASHBOARD -->
     <div id="report_container" class="report">
       
+      <!-- Visuals -->
       <div class="card">
-        <h2>Visual Institutional Dashboard</h2>
+        <h2>Institutional Positioning Dashboard</h2>
         <div class="visual-container">
-          <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; text-transform: uppercase;">Seller Aggression (7-Strike Short Buildup Concentration)</div>
-          <div class="bar-chart-row">
-            <div class="bar-label">CE Resistance (Calls)</div>
-            <div class="bar-wrapper"><div id="bar_ce" class="bar-fill bar-red" style="width: 5%;">0/7 Strikes</div></div>
+          <div style="font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">
+            Seller Concentration (Short Buildup across 7 Strikes)[cite: 1]
           </div>
           <div class="bar-chart-row">
-            <div class="bar-label">PE Support (Puts)</div>
-            <div class="bar-wrapper"><div id="bar_pe" class="bar-fill bar-green" style="width: 5%;">0/7 Strikes</div></div>
+            <div class="bar-label">Call Sellers (CE)</div>
+            <div class="bar-wrapper"><div id="bar_ce" class="bar-fill bar-red" style="width: 5%;">0/7</div></div>
+          </div>
+          <div class="bar-chart-row">
+            <div class="bar-label">Put Sellers (PE)</div>
+            <div class="bar-wrapper"><div id="bar_pe" class="bar-fill bar-green" style="width: 5%;">0/7</div></div>
           </div>
         </div>
 
         <div class="visual-container">
-          <div style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase;">Directional Bias Meter</div>
+          <div style="font-size: 0.8rem; color: var(--muted); text-transform: uppercase;">Directional Confluence Gauge</div>
           <div class="gauge-container">
-            <span style="font-size: 0.8rem; font-weight: bold; color: var(--red);">BEARISH</span>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--red);">BEARISH</span>
             <div class="gauge-track"><div id="bias_marker" class="gauge-marker"></div></div>
-            <span style="font-size: 0.8rem; font-weight: bold; color: var(--green);">BULLISH</span>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--green);">BULLISH</span>
           </div>
         </div>
       </div>
 
+      <!-- Narrative Sections -->
       <div class="card">
-        <h2>1. Micro-Parameter Assessment</h2>
+        <h2>1. Micro-Parameter Confluence</h2>
         <div id="micro_verdict"></div>
       </div>
 
       <div class="card">
-        <h2>2. Institutional Footprint (Options Chain)</h2>
+        <h2>2. Option Chain Footprint & 30-Min Flow Shift</h2>
         <div id="options_verdict"></div>
       </div>
 
       <div class="card">
-        <h2>3. Execution & Validation Plan</h2>
+        <h2>3. Actionable Execution Plan (2-Candle Theory)</h2>
         <div id="action_plan"></div>
       </div>
 
@@ -206,38 +286,43 @@
       <option value="neutral">- Neutral / Sideways -</option>
       <option value="short_buildup">Short Buildup (Sellers Writing)</option>
       <option value="long_buildup">Long Buildup (Buyers Active)</option>
-      <option value="short_covering">Short Covering (Sellers Trapped/Exiting)</option>
+      <option value="short_covering">Short Covering (Sellers Trapped / Exiting)</option>
       <option value="long_unwinding">Long Unwinding (Buyers Booking Profit)</option>
     `;
 
     const ivOptions = `
-      <option value="neutral">-</option>
-      <option value="spiking">Spiking (High)</option>
-      <option value="crashing">Crashing (Low)</option>
+      <option value="neutral">Normal / Flat</option>
+      <option value="spiking">Spiking (High Demand)</option>
+      <option value="crashing">Crashing (Premium Decay)</option>
     `;
 
-    // Builds the 7-strike table based on user input
+    function updateSliders() {
+      document.getElementById('rsi_disp').innerText = document.getElementById('rsi_val').value;
+      document.getElementById('step_disp').innerText = document.getElementById('step_input').value + " pts";
+    }
+
     function generateChain() {
       const atm = parseInt(document.getElementById('atm_input').value) || 45000;
       const step = parseInt(document.getElementById('step_input').value) || 100;
       const tbody = document.getElementById('chain_body');
       let html = '';
 
-      // Standard view: Lower strikes at top, higher at bottom
       for (let i = -3; i <= 3; i++) {
         const strike = atm + (i * step);
         const isAtm = (i === 0);
         
-        // At lower strikes (e.g., 44700 when ATM is 45000), Calls give right to buy below market = ITM.
+        // Lower strikes: Calls are ITM, Puts are OTM
         const ceTag = i < 0 ? '<span class="itm-tag">ITM</span>' : (i > 0 ? '<span class="otm-tag">OTM</span>' : '');
-        // At lower strikes, Puts give right to sell below market = OTM.
         const peTag = i < 0 ? '<span class="otm-tag">OTM</span>' : (i > 0 ? '<span class="itm-tag">ITM</span>' : '');
 
         html += `
           <tr class="${isAtm ? 'atm-row' : ''}">
             <td><select id="ce_stat_${i}">${dropdownOptions}</select></td>
             <td><select id="ce_iv_${i}">${ivOptions}</select></td>
-            <td class="strike-cell">${strike} ${isAtm ? '<br><span style="font-size:0.7rem;color:var(--accent);">ATM</span>' : ''}</td>
+            <td class="strike-cell">
+              ${strike} ${isAtm ? '<br><span style="font-size:0.7rem;color:var(--accent);">ATM</span>' : ''}
+              ${!isAtm ? (i < 0 ? ceTag : peTag) : ''}
+            </td>
             <td><select id="pe_stat_${i}">${dropdownOptions}</select></td>
             <td><select id="pe_iv_${i}">${ivOptions}</select></td>
           </tr>
@@ -246,16 +331,18 @@
       tbody.innerHTML = html;
     }
 
-    // Generate table on initial load
-    window.onload = generateChain;
+    window.onload = () => {
+      updateSliders();
+      generateChain();
+    };
 
-    function analyzeMarket() {
-      let biasScore = 50; // 0 = Bearish, 100 = Bullish
+    function executeAnalysis() {
+      let biasScore = 50; // 0 = Extreme Bearish, 100 = Extreme Bullish
       
-      // 1. Micro-Parameters
+      // 1. Evaluate Micro-Parameters
       const futSpot = document.getElementById('fut_spot').value;
       const vwap = document.getElementById('vwap_status').value;
-      const rsi = parseFloat(document.getElementById('rsi_val').value) || 50;
+      const rsi = parseFloat(document.getElementById('rsi_val').value);
       const vixVal = parseFloat(document.getElementById('vix_val').value) || 12;
       const vixDir = document.getElementById('vix_dir').value;
       const volConfirm = document.getElementById('vol_confirm').value;
@@ -263,70 +350,65 @@
       let microHTML = "<ul>";
       
       if (futSpot === 'premium') {
-        microHTML += `<li><strong>Futures vs Spot:</strong> Futures in premium indicates traders expect the market to move higher by expiry[cite: 1].</li>`;
+        microHTML += `<li><strong>Futures vs Spot:</strong> Trading in premium. Speculators and institutions expect prices to move higher by expiry[cite: 1].</li>`;
         biasScore += 10;
       } else {
-        microHTML += `<li><strong>Futures vs Spot:</strong> Futures in discount indicates traders expect the market to fall[cite: 1].</li>`;
+        microHTML += `<li><strong>Futures vs Spot:</strong> Trading in discount. Speculators expect market weakness or correction[cite: 1].</li>`;
         biasScore -= 10;
       }
 
       if (vwap === 'above') {
-        microHTML += `<li><strong>VWAP:</strong> Trading above VWAP means buyers are winning; look for bullish entries[cite: 1].</li>`;
+        microHTML += `<li><strong>VWAP Benchmark:</strong> Price is ABOVE VWAP. Buyers are winning intraday control[cite: 1].</li>`;
         biasScore += 15;
       } else {
-        microHTML += `<li><strong>VWAP:</strong> Trading below VWAP means sellers are winning; look for bearish entries[cite: 1].</li>`;
+        microHTML += `<li><strong>VWAP Benchmark:</strong> Price is BELOW VWAP. Sellers are dominating the intraday trend[cite: 1].</li>`;
         biasScore -= 15;
       }
 
-      if (vixVal <= 11) microHTML += `<li><strong>VIX Absolute:</strong> Low VIX (${vixVal}). Buy on dips, as sharp falls often see 80-90% recovery in the second half[cite: 1].</li>`;
-      else if (vixVal >= 17) microHTML += `<li><strong>VIX Absolute:</strong> Extreme VIX (${vixVal}+). Highly volatile selling environment; wait on sidelines or trade with very low quantity[cite: 1].</li>`;
+      if (vixVal <= 11) {
+        microHTML += `<li><strong>VIX Level (${vixVal}):</strong> Low VIX environment. Dips are buyable; 80–90% of sharp intraday drops recover in the second half (after 2:30 PM)[cite: 1].</li>`;
+      } else if (vixVal >= 17) {
+        microHTML += `<li><strong>VIX Level (${vixVal}):</strong> Elevated/Extreme VIX. Aggressive selling environment; trade reduced size or sit on the sidelines[cite: 1].</li>`;
+      }
 
       if (vixDir === 'market_up_vix_up') {
-        microHTML += `<li><strong style="color:var(--red);">VIX Divergence Warning:</strong> Market and VIX both rising. Someone is building large short/hedge positions; prepare for a sudden drop[cite: 1].</li>`;
+        microHTML += `<li><strong style="color:var(--red);">VIX Divergence Trap:</strong> Market is rising while VIX is surging. Institutions are aggressively buying downside protection or shorting[cite: 1]. High risk of a sudden crash[cite: 1].</li>`;
         biasScore -= 15;
       } else if (vixDir === 'market_up_vix_down') {
-        microHTML += `<li><strong>VIX Direction:</strong> Market rising while VIX cools is a standard bullish signal; every dip is a buy[cite: 1].</li>`;
+        microHTML += `<li><strong>VIX Alignment:</strong> Market up with cooling VIX confirms healthy, orderly bullish expansion[cite: 1].</li>`;
         biasScore += 10;
       } else if (vixDir === 'market_down_vix_up') {
-        microHTML += `<li><strong>VIX Direction:</strong> Bearish alignment. Every rise is a selling opportunity[cite: 1].</li>`;
+        microHTML += `<li><strong>VIX Alignment:</strong> Downward price trend supported by surging VIX confirms aggressive short buildup[cite: 1].</li>`;
         biasScore -= 10;
       }
 
       if (volConfirm === 'no') {
-        microHTML += `<li><strong style="color:var(--amber);">Volume Risk:</strong> Lacking 2-candle volume support. Reversals without volume are weak and likely intended to trap traders[cite: 1].</li>`;
+        microHTML += `<li><strong style="color:var(--amber);">Volume Warning:</strong> Lacking 2-candle volume confirmation (>50k BN or >125k Nifty)[cite: 1]. Any price movement is likely a fake move designed to trap traders[cite: 1].</li>`;
       }
       
-      if (rsi > 80) microHTML += `<li><strong style="color:var(--red);">RSI Exhaustion:</strong> RSI > 80 is overbought. Do not take fresh buy entries[cite: 1].</li>`;
-      else if (rsi < 20) microHTML += `<li><strong style="color:var(--green);">RSI Exhaustion:</strong> RSI < 20 is oversold. Do not take fresh sell entries[cite: 1].</li>`;
-      
+      if (rsi > 80) microHTML += `<li><strong style="color:var(--red);">RSI Alert:</strong> RSI > 80 (Overbought). Strict rule: DO NOT initiate fresh buy entries[cite: 1].</li>`;
+      else if (rsi < 20) microHTML += `<li><strong style="color:var(--green);">RSI Alert:</strong> RSI < 20 (Oversold). Strict rule: DO NOT initiate fresh short entries[cite: 1].</li>`;
+      else if (rsi >= 40 && rsi <= 50) microHTML += `<li><strong>RSI Chop Zone:</strong> 40–50 range is a no-trade zone[cite: 1].</li>`;
+
       microHTML += "</ul>";
       document.getElementById('micro_verdict').innerHTML = microHTML;
 
-      // 2. Options Chain Analysis
+      // 2. Evaluate 7 Strikes
       let ceShorts = 0, peShorts = 0;
       let ceCovering = 0, peCovering = 0;
-      let ceUnwinding = 0, peUnwinding = 0;
 
       for (let i = -3; i <= 3; i++) {
-        // Fallback checks in case user hasn't generated the table yet
-        const ceStatEl = document.getElementById(`ce_stat_${i}`);
-        const peStatEl = document.getElementById(`pe_stat_${i}`);
-        if (!ceStatEl || !peStatEl) continue;
+        const ceEl = document.getElementById(`ce_stat_${i}`);
+        const peEl = document.getElementById(`pe_stat_${i}`);
+        if (!ceEl || !peEl) continue;
 
-        const ceStat = ceStatEl.value;
-        const peStat = peStatEl.value;
-
-        if (ceStat === 'short_buildup') ceShorts++;
-        if (peStat === 'short_buildup') peShorts++;
-        
-        if (ceStat === 'short_covering') ceCovering++;
-        if (peStat === 'short_covering') peCovering++;
-
-        if (ceStat === 'long_unwinding') ceUnwinding++;
-        if (peStat === 'long_unwinding') peUnwinding++;
+        if (ceEl.value === 'short_buildup') ceShorts++;
+        if (peEl.value === 'short_buildup') peShorts++;
+        if (ceEl.value === 'short_covering') ceCovering++;
+        if (peEl.value === 'short_covering') peCovering++;
       }
 
-      // Update Bar Charts
+      // Update Bar Visuals
       const ceWidth = (ceShorts / 7) * 100;
       const peWidth = (peShorts / 7) * 100;
       document.getElementById('bar_ce').style.width = ceWidth === 0 ? '5%' : `${ceWidth}%`;
@@ -334,31 +416,59 @@
       document.getElementById('bar_pe').style.width = peWidth === 0 ? '5%' : `${peWidth}%`;
       document.getElementById('bar_pe').innerText = `${peShorts}/7 Strikes`;
 
-      let optHTML = "";
-      
-      // Core Principle: Always look from sellers prospective[cite: 1].
-      if (ceShorts > peShorts) {
-        optHTML = `<div class="alert alert-bear"><strong>Bearish Options Chain:</strong> Sellers are dominating the Call (CE) side.</div>
-        <p>You must look at the market from the seller's perspective. The high concentration of <strong>Short Buildup in CE strikes</strong> indicates sellers are confident the price will not reach these levels and intend to decay the premium to zero[cite: 1].</p>`;
-        biasScore -= 20;
-      } else if (peShorts > ceShorts) {
-        optHTML = `<div class="alert alert-bull"><strong>Bullish Options Chain:</strong> Sellers are dominating the Put (PE) side.</div>
-        <p>Viewing from the seller's perspective, heavy <strong>Short Buildup in PE strikes</strong> means sellers are creating a strong support base, expecting the market to either remain sideways or push higher[cite: 1].</p>`;
-        biasScore += 20;
-      } else if (ceShorts > 0 && ceShorts === peShorts) {
-        optHTML = `<div class="alert alert-neutral"><strong>Rangebound Market:</strong> Equal seller footprints on both sides.</div>
-        <p>When changes in OI on both PE and CE are relatively equal, it indicates a lack of directional bias. This is a classic "seller's day" aimed at capturing Theta erosion from both ends[cite: 1].</p>`;
-      } else {
-        optHTML = `<div class="alert alert-neutral"><strong>Indecisive:</strong> No distinct short buildup dominance.</div>
-        <p>Ensure you are not confusing aggressive shorting with standard profit booking. If Long Unwinding is widespread, buyers are simply closing out; wait for clear institutional positioning[cite: 1].</p>`;
+      // 3. Evaluate 30-Minute Shifts
+      const ceOtmFlow = document.getElementById('ce_otm_flow').value;
+      const ceItmFlow = document.getElementById('ce_itm_flow').value;
+      const peOtmFlow = document.getElementById('pe_otm_flow').value;
+      const peItmFlow = document.getElementById('pe_itm_flow').value;
+
+      let flowScore = 0;
+      let flowDetails = [];
+
+      if (ceOtmFlow === 'added') {
+        flowScore -= 10;
+        flowDetails.push("Calls actively ADDED at OTM: Sellers fortifying ceiling resistance[cite: 1].");
+      } else if (ceOtmFlow === 'removed') {
+        flowScore += 10;
+        flowDetails.push("Calls REMOVED at OTM: Resistance dissolving; sellers backing off[cite: 1].");
       }
 
-      // Supplementary Options Cues
-      if (ceCovering > 0) {
-        optHTML += `<p class="alert alert-bull" style="background:transparent; border-left:2px solid var(--green); padding:8px; margin-top:8px;"><strong>Momentum Cue:</strong> Short Covering seen in Calls. Typically found in ITM/Deep ITM strikes, trapped call sellers are being forced to buy, which can generate ferocious upward momentum[cite: 1].</p>`;
+      if (ceItmFlow === 'removed') {
+        flowScore += 15;
+        flowDetails.push("Deep ITM Calls REMOVED: Short covering confirmed. Trapped shorts paying up, triggering rapid upward rallies[cite: 1].");
       }
-      if (ceUnwinding > 0 && peUnwinding > 0) {
-         optHTML += `<p class="alert alert-neutral" style="background:transparent; border-left:2px solid var(--amber); padding:8px; margin-top:8px;"><strong>Liquidation Cue:</strong> Long Unwinding detected. Existing buyers are booking profits and exiting their positions[cite: 1].</p>`;
+
+      if (peOtmFlow === 'added') {
+        flowScore += 10;
+        flowDetails.push("Puts actively ADDED at OTM: Sellers building a defensive support base[cite: 1].");
+      } else if (peOtmFlow === 'removed') {
+        flowScore -= 10;
+        flowDetails.push("Puts REMOVED at OTM: Support floor cracking; put writers exiting[cite: 1].");
+      }
+
+      if (peItmFlow === 'removed') {
+        flowScore -= 15;
+        flowDetails.push("Deep ITM Puts REMOVED: Downside acceleration as ITM put sellers capitulate[cite: 1].");
+      }
+
+      biasScore += flowScore;
+
+      // Compile Option Chain & Flow Narrative
+      let optHTML = "";
+      if (ceShorts > peShorts) {
+        biasScore -= 20;
+        optHTML += `<div class="alert alert-bear"><strong>Bearish Bias (Call Writers in Control):</strong> High concentration of Short Buildup on Calls. Sellers believe the market cannot reach these strikes and are letting theta erode the premium to zero[cite: 1].</div>`;
+      } else if (peShorts > ceShorts) {
+        biasScore += 20;
+        optHTML += `<div class="alert alert-bull"><strong>Bullish Bias (Put Writers in Control):</strong> Heavy Short Buildup on Puts. Smart money is creating strong support, expecting the market to hold or rise[cite: 1].</div>`;
+      } else {
+        optHTML += `<div class="alert alert-neutral"><strong>Rangebound / Sellers' Day:</strong> Balanced short additions on both Calls and Puts indicate a neutral market aimed at theta decay from both sides[cite: 1].</div>`;
+      }
+
+      if (flowDetails.length > 0) {
+        optHTML += `<p><strong>Last 30-Minute Shift Dynamics:</strong></p><ul>`;
+        flowDetails.forEach(d => optHTML += `<li>${d}</li>`);
+        optHTML += `</ul>`;
       }
 
       document.getElementById('options_verdict').innerHTML = optHTML;
@@ -367,25 +477,24 @@
       biasScore = Math.max(0, Math.min(100, biasScore));
       document.getElementById('bias_marker').style.left = `${biasScore}%`;
 
-      // 3. Execution Plan
+      // 4. Execution Plan
       let actionHTML = "<ul>";
-      
       if (biasScore > 60 && vwap === 'above' && rsi < 80) {
-        actionHTML += `<li><strong>Bias:</strong> Bullish. Look to initiate Long Trades in Index Futures or Buy Call Options[cite: 1].</li>`;
-        actionHTML += `<li><strong>Strike Selection (Buyer):</strong> Select ITM strikes with a Delta of 0.60 (start of series) to 0.70-1.00 (near expiry) to limit time decay exposure[cite: 1].</li>`;
+        actionHTML += `<li><strong>Directional Bias:</strong> Bullish. Look to enter Long Index Futures or Buy Call Options on pullbacks[cite: 1].</li>`;
+        actionHTML += `<li><strong>Option Buyer Strike:</strong> Select ITM Call strikes with Delta 0.60 to 0.70+ (liquidity permitting) to limit theta decay[cite: 1].</li>`;
       } else if (biasScore < 40 && vwap === 'below' && rsi > 20) {
-        actionHTML += `<li><strong>Bias:</strong> Bearish. Look to initiate Short Trades in Index Futures or Buy Put Options[cite: 1].</li>`;
-        actionHTML += `<li><strong>Strike Selection (Buyer):</strong> Select ITM PE strikes. Do not choose OTM strikes, as they will not recover sufficiently if the market moves against you temporarily[cite: 1].</li>`;
+        actionHTML += `<li><strong>Directional Bias:</strong> Bearish. Look to enter Short Index Futures or Buy Put Options on pullbacks[cite: 1].</li>`;
+        actionHTML += `<li><strong>Option Buyer Strike:</strong> Select ITM Put strikes. Avoid OTM as they will struggle to recover value on retracements[cite: 1].</li>`;
       } else {
-        actionHTML += `<li><strong>Bias:</strong> Mixed/Sideways. Do not initiate directional option buying until the chart and data strictly align[cite: 1].</li>`;
+        actionHTML += `<li><strong>Directional Bias:</strong> Mixed / Sideways. Do not force directional option buys until the chart and data align[cite: 1].</li>`;
       }
 
       actionHTML += `
-        <li><strong>Entry Trigger (2-Candle Theory):</strong> Deploy your resources in the 3rd candle only after observing 2 consecutive bars with >50K volume (Bank Nifty) or >125K volume (Nifty)[cite: 1].</li>
-        <li><strong>Risk Management:</strong> Use the low (for longs) or high (for shorts) of the 1st breakout candle as your strict Stop Loss. If this level is hit, your fort is breached—exit immediately[cite: 1].</li>
-        <li><strong>Time Window:</strong> Avoid trading in the morning noise before 9:45 AM, and do not hold or initiate new intraday positions beyond 2:30 PM[cite: 1].</li>
+        <li><strong>2-Candle Entry Trigger:</strong> Deploy capital in the 3rd candle ONLY after 2 consecutive candles meet the volume threshold (>50k BN or >125k Nifty)[cite: 1].</li>
+        <li><strong>Stop-Loss Benchmark:</strong> Anchor your SL to the low (for longs) or high (for shorts) of the 1st candle. If that level breaks, your fort is breached—exit immediately[cite: 1].</li>
+        <li><strong>Time Window Discipline:</strong> Strictly avoid entries before 9:45 AM or after 2:30 PM[cite: 1]. Square off all intraday positions before 3:15 PM[cite: 1].</li>
       </ul>`;
-      
+
       document.getElementById('action_plan').innerHTML = actionHTML;
       document.getElementById('report_container').style.display = 'block';
     }

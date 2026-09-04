@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Options Seller Position Analyzer</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e293b">
+  <style>
+    :root { --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --accent: #38bdf8; --red: #ef4444; --green: #22c55e; }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 20px; margin: 0; line-height: 1.6; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; border-bottom: 2px solid var(--panel); padding-bottom: 10px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: var(--panel); padding: 20px; border-radius: 8px; border-top: 4px solid var(--accent); }
+    .card.ce { border-top-color: var(--red); }
+    .card.pe { border-top-color: var(--green); }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-top: 10px; color: #cbd5e1; }
+    select, input { width: 100%; padding: 10px; margin-top: 5px; background: #0b0f19; color: #fff; border: 1px solid #334155; border-radius: 4px; }
+    button { width: 100%; padding: 12px; background: var(--accent); color: #000; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+    button:hover { opacity: 0.9; }
+    .story-board { margin-top: 20px; padding: 20px; background: #0b0f19; border-left: 4px solid var(--accent); border-radius: 4px; white-space: pre-line; }
+    .highlight { color: var(--accent); font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Options Seller Position Analyzer</h1>
+    <p style="font-size: 0.9rem; color: #94a3b8;">Based on the "Market Dynamics and Derivative Trading Strategies" framework.</p>
+    
+    <div class="grid">
+      <!-- Call (CE) Side Inputs -->
+      <div class="card ce">
+        <h2 style="margin-top: 0; font-size: 1.2rem;">Call (CE) Side</h2>
+        <label>Strike Price</label>
+        <input type="number" id="ce_strike" placeholder="e.g., 45700">
+        
+        <label>Price (LTP) Trend</label>
+        <select id="ce_price">
+          <option value="up">Increasing</option>
+          <option value="down">Decreasing</option>
+        </select>
+
+        <label>Open Interest (OI) Trend</label>
+        <select id="ce_oi">
+          <option value="up">Increasing</option>
+          <option value="down">Decreasing</option>
+        </select>
+
+        <label>Implied Volatility (IV) Trend</label>
+        <select id="ce_iv">
+          <option value="up">Spiking / High</option>
+          <option value="down">Crashing / Low</option>
+        </select>
+      </div>
+
+      <!-- Put (PE) Side Inputs -->
+      <div class="card pe">
+        <h2 style="margin-top: 0; font-size: 1.2rem;">Put (PE) Side</h2>
+        <label>Strike Price</label>
+        <input type="number" id="pe_strike" placeholder="e.g., 45400">
+        
+        <label>Price (LTP) Trend</label>
+        <select id="pe_price">
+          <option value="down">Decreasing</option>
+          <option value="up">Increasing</option>
+        </select>
+
+        <label>Open Interest (OI) Trend</label>
+        <select id="pe_oi">
+          <option value="up">Increasing</option>
+          <option value="down">Decreasing</option>
+        </select>
+
+        <label>Implied Volatility (IV) Trend</label>
+        <select id="pe_iv">
+          <option value="down">Crashing / Low</option>
+          <option value="up">Spiking / High</option>
+        </select>
+      </div>
+    </div>
+
+    <button onclick="generateStory()">Analyze Seller Positions</button>
+
+    <div id="output" class="story-board" style="display: none;"></div>
+  </div>
+
+  <script>
+    function getQuadrant(price, oi) {
+      if (price === 'up' && oi === 'up') return { status: 'Long Buildup', sentiment: 'buyers are taking fresh bullish positions' };
+      if (price === 'down' && oi === 'up') return { status: 'Short Buildup', sentiment: 'sellers are aggressively writing new contracts' };
+      if (price === 'up' && oi === 'down') return { status: 'Short Covering', sentiment: 'trapped sellers are buying to exit their short positions' };
+      if (price === 'down' && oi === 'down') return { status: 'Long Unwinding', sentiment: 'existing buyers are booking profits and exiting' };
+    }
+
+    function getIVContext(iv) {
+      if (iv === 'up') return "buyers are coming in and pushing premiums higher";
+      return "the strike is dominated by sellers who are crushing the time value";
+    }
+
+    function generateStory() {
+      const ce = {
+        strike: document.getElementById('ce_strike').value || 'CE Strike',
+        price: document.getElementById('ce_price').value,
+        oi: document.getElementById('ce_oi').value,
+        iv: document.getElementById('ce_iv').value,
+        quad: getQuadrant(document.getElementById('ce_price').value, document.getElementById('ce_oi').value)
+      };
+
+      const pe = {
+        strike: document.getElementById('pe_strike').value || 'PE Strike',
+        price: document.getElementById('pe_price').value,
+        oi: document.getElementById('pe_oi').value,
+        iv: document.getElementById('pe_iv').value,
+        quad: getQuadrant(document.getElementById('pe_price').value, document.getElementById('pe_oi').value)
+      };
+
+      let story = `Here is the market narrative based on the options chain dynamics:\n\n`;
+
+      // CE Side Analysis
+      story += `**On the Call (${ce.strike}) Side:**\n`;
+      story += `The data shows a combination of Price ${ce.price.toUpperCase()} and OI ${ce.oi.toUpperCase()}, which indicates a **${ce.quad.status}**. This means ${ce.quad.sentiment}. Furthermore, the IV is ${ce.iv === 'up' ? 'spiking' : 'falling'}, indicating that ${getIVContext(ce.iv)}.\n\n`;
+
+      // PE Side Analysis
+      story += `**On the Put (${pe.strike}) Side:**\n`;
+      story += `We observe Price ${pe.price.toUpperCase()} and OI ${pe.oi.toUpperCase()}, forming a **${pe.quad.status}**. This suggests ${pe.quad.sentiment}. Looking at the IV, it is ${pe.iv === 'up' ? 'spiking' : 'falling'}, meaning ${getIVContext(pe.iv)}.\n\n`;
+
+      // Conclusion: Where is the seller?
+      story += `**Conclusion: Where is the Smart Money (Seller) Sitting?**\n`;
+      
+      let sellerLocation = "";
+      let marketBias = "";
+
+      if (ce.quad.status === 'Short Buildup' && (pe.quad.status === 'Long Unwinding' || pe.quad.status === 'Short Covering')) {
+        sellerLocation = `Sellers are heavily concentrated on the **CE side**.`;
+        marketBias = `They are defending the ${ce.strike} level, believing the price will not reach there, and are waiting to make the premium zero. The market outlook is Bearish.`;
+      } else if (pe.quad.status === 'Short Buildup' && (ce.quad.status === 'Long Unwinding' || ce.quad.status === 'Short Covering')) {
+        sellerLocation = `Sellers are heavily concentrated on the **PE side**.`;
+        marketBias = `They are providing strong support at the ${pe.strike} level, expecting the market to rise or stay above it to pocket the premium. The market outlook is Bullish.`;
+      } else if (ce.quad.status === 'Short Buildup' && pe.quad.status === 'Short Buildup') {
+        sellerLocation = `Sellers are writing contracts on **both sides** (Short Strangle).`;
+        marketBias = `They are expecting a range-bound, sideways market to capture theta (time) decay from both CE and PE premiums.`;
+      } else {
+        sellerLocation = `The seller's footprint is mixed or defensive.`;
+        marketBias = `Watch for further OI spurts. If IV is crashing on both sides alongside price drops, the market is experiencing massive long unwinding rather than fresh directional selling.`;
+      }
+
+      story += `${sellerLocation} ${marketBias}`;
+
+      const out = document.getElementById('output');
+      out.style.display = 'block';
+      out.innerHTML = story.replace(/\*\*(.*?)\*\*/g, '<span class="highlight">$1</span>');
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+      });
+    }
+  </script>
+</body>
+</html>
